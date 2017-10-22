@@ -1,0 +1,43 @@
+#! /bin/bash
+# 
+# script to be put in /etc/rc.d to start @progtitle@ server process
+# tested on Gentoo 2004.4
+# Author: Manuel Moos <manuel@moosnet.de>
+#
+
+# init info lifted from debian package rules
+### BEGIN INIT INFO
+# Provides:          @prognamebase@-master
+# Required-Start:    $local_fs $network
+# Required-Stop:     $local_fs $network
+# Should-Start:
+# Should-Stop:
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: @progtitle@ Master Server
+# Description:       Runs the @progtitle@ Master Server
+### END INIT INFO
+
+# set -x
+
+# program installation directory
+PROGDIR=@scriptdir_reloc@
+
+# load configuration
+. $PROGDIR/rcd_config
+
+# files where PIDs are stored
+STARTERPIDFILE=$PIDDIR/@progname@-masterstarter.pid
+MAINPIDFILE=$PIDDIR/@progname@-master.pid
+
+# program to run
+BINARY=masterstarter
+BINFILE=$PROGDIR/$BINARY
+TYPE=master
+
+# log file
+LOGFILE=$LOGDIR/@prognamebase@-master.log
+
+# delegate to common start/stop/status code
+. $RCDDIR/rcd_startstop
+

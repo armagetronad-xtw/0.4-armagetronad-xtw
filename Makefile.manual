@@ -1,0 +1,200 @@
+# Parts of the makefile that are not handled by automake
+
+##################
+# Beautification #
+##################
+
+# use this target if you're OK with the project's defaults and
+# want updated file timestamps
+rebeautify:
+#	ARTISTIC_STYLE_OPTIONS=$(srcdir)/config/astylerc sh $(srcdir)/batch/make/beautify -t $(srcdir) .beautytag.re
+
+# use this target if you want to switch between your settings
+# (beautify-personal) and the project defaults to get back to
+# the defaults (timestamps stay untouched)
+beautify:
+	rm -f $(srcdir)/.beautytag.personal
+#	ARTISTIC_STYLE_OPTIONS=$(srcdir)/config/astylerc sh $(srcdir)/batch/make/beautify $(srcdir) .beautytag
+
+# use this target to run astyle with your personal settings for
+# it (but remember to do "make beautify" before comitting to Subversion!)
+beautify-personal:
+	rm -f $(srcdir)/.beautytag $(srcdir)/.beautytag.re
+#	ARTISTIC_STYLE_OPTIONS=~/.astylerc sh $(srcdir)/batch/make/beautify $(srcdir) .beautytag.personal 
+
+##########
+# Checks #
+##########
+
+destdir.inst=/destdir
+destdir.inst2=/destdir
+destdir.inst3=
+
+predistcheckclean=rm -rf ._$* .leftover.$* .help .doc
+# checks whether installation and uninstallation works fine
+installcheck_install.%:
+	$(predistcheckclean)
+	mkdir ._$*
+
+#   simulate old data to migrate
+	mkdir -p ._$*/@oldvardir@
+	echo "Z-Man was here" > ._$*/@oldvardir@/users.txt
+
+#	install into destdir
+	ARMAGETRONAD_INSTALL_TESTING="yes" DESTDIR=`pwd`/._$*$(destdir.$*) ROOTDIR=`pwd`/._$* $(MAKE) install
+
+#	install fake rc.config
+	echo "user=$(USER)" >> ._$*$(destdir.$*)/$(aa_sysconfdir)/rc.config
+	echo "niceness_level=5" >> ._$*$(destdir.$*)/$(aa_sysconfdir)/rc.config
+#   echo "VARDIR=$$(pwd)/._$*/${localstatedir}" >> ._$*/destdir/$(aa_sysconfdir)/rc.config
+
+#	delete old configuration and prune empty directories
+	rm -rf ._$*@oldvardir@
+	for d in `find ._$* -depth -type d`; do rmdir $$d; done > /dev/null 2>&1 || true
+
+#   move to final destination
+	mv -f ._$*$(destdir.$*)/* ._$*/ || true
+	rmdir ._$*$(destdir.$*) || true
+
+if USE_SYSINSTALL
+	test -r	._$*/@aa_localstatedir@/users.txt
+endif
+
+installcheck_run_%: installcheck_install_%
+	@echo "Testing executable..."
+	cd ._$*; ./$(bindir)/@progname@
+
+installcheck_test.%: installcheck_install.%
+	@echo "Testing executable..."
+if BUILDMAIN
+	cd ._$*; ./$(bindir)/@progname@ --help > .help
+	test -s ._$*/.help
+	cd ._$*; ./$(bindir)/@progname@ --doc > .doc
+	test -s ._$*/.doc
+endif
+	rm -rf ._$*/var
+	rm -rf ._$*/${localstatedir}
+if USE_SYSINSTALL
+if BUILDMASTER
+	@echo "Testing master server starter script..."
+	@cd ._$*; ./$(initdir)/@prognamebase@-master start
+	@cd ._$*; ./$(initdir)/@prognamebase@-master status || { sleep 5; ./$(initdir)/@prognamebase@-master status; }
+	@cd ._$*; ./$(initdir)/@prognamebase@-master restart
+	@cd ._$*; ./$(initdir)/@prognamebase@-master status || { sleep 5; ./$(initdir)/@prognamebase@-master status; }
+	@cd ._$*; ./$(initdir)/@prognamebase@-master stop
+	@sleep 1
+	@cd ._$*; ./$(initdir)/@prognamebase@-master stop || true
+	@cd ._$*; if ./$(initdir)/@prognamebase@-master status; then exit 1; else echo "Success!"; fi
+endif
+if BUILDDEDICATED
+	@echo "Testing server starter script..."
+	@cd ._$*; ./$(initdir)/@progname@ start
+	@cd ._$*; ./$(initdir)/@progname@ status || { sleep 5; ./$(initdir)/@progname@ status; }
+	@cd ._$*; ./$(initdir)/@progname@ restart
+	@cd ._$*; ./$(initdir)/@progname@ status || { sleep 5; ./$(initdir)/@progname@ status; }
+	@cd ._$*; ./$(initdir)/@progname@ stop
+	@sleep 1
+	@cd ._$*; ./$(initdir)/@progname@ stop || true
+	@cd ._$*; if ./$(initdir)/@progname@ status; then exit 1; else echo "Success!"; fi
+#   for testing the stop-on-uninstall code
+#   @cd ._$*; ./$(initdir)/@progname@ start
+endif
+endif
+
+installcheck_douninstall.inst:
+	DESTDIR=`pwd`/._inst $(MAKE) uninstall
+
+installcheck_uninstall.inst: installcheck_test.inst
+
+installcheck_uninstall.%: installcheck_install.%
+	rm -rf ._$*/${localstatedir} ._$*/.doc ._$*/.help ._$*/leak.log ._$*/memprofile*.txt ._$*/gmon.out ._$*/@logdir@
+	$(MAKE) installcheck_douninstall.$*
+	find ._$* -type f -exec echo leftover file \{\} >> .leftover.$* \;
+	find ._$* -type l -exec echo leftover link \{\} >> .leftover.$* \;
+	if test -s .leftover.$*; then cat .leftover.$*; false; else true; fi
+	rm -f .leftover.$*
+
+if USE_UNINSTALL
+installcheck_douninstall.inst2:
+	./._inst2/$(bindir)/${uninstaller}
+	find ._inst2 -mindepth 1 -type d -name ${progname} -exec echo leftover directory \{\} >> .leftover.inst2 \;
+
+installcheck_douninstall.inst3:
+	./._inst3/$(bindir)/${uninstaller}
+	find ._inst3 -mindepth 1 -type d -name ${progname} -exec echo leftover directory \{\} >> .leftover.inst3 \;
+
+myinstallcheck: installcheck_uninstall.inst installcheck_uninstall.inst2
+else
+myinstallcheck: installcheck_uninstall.inst
+endif
+	$(predistcheckclean)
+	@echo -e "\n---------------------------------------\nInstallation and uninstallation worked!\n---------------------------------------\n"
+
+installcheck: myinstallcheck
+devcheck: beautify myinstallcheck
+fullcheck: beautify devcheck distcheck
+
+# run all that don't require a full rebuild
+test: installcheck
+
+###############
+# Fingerprint #
+###############
+
+# initial rule for source change tag (make it really old)
+.changetag:
+	touch -t 9001010101 $@
+
+# make snapshot of SVN state, tracking relevant changes in .changetag
+fingerprint: .changetag
+# easy, just do svn info, that contains all the information needed. If that fails, try other scms.
+	{ bzr testament ${top_srcdir}; bzr info ${top_srcdir};  } > $@ || { svn info ${top_srcdir} > $@; svn info `dirname ${top_srcdir}` >> @$ || svn info `dirname ${top_srcdir}` >> $@ || echo "unknown" >> $@; } || svk info ${top_srcdir} > $@ || echo "unknown" > $@
+	
+	diff $@ .changetag > /dev/null 2>&1 || { cp $@ .changetag; rm $(srcdir)/ChangeLog;  touch -t 198001010000 $(srcdir)/ChangeLog; }
+
+########################
+# tracking changes     #
+########################
+
+# change version on deliberate version edit
+$(srcdir)/version: $(wildcard $(srcdir)/*_version) .changetag
+	echo "m4_define(AUTOMATIC_VERSION,["`sh $(srcdir)/batch/make/version $(srcdir)`"])" > $@
+
+# Keep the changelog up to date as well (triggered by make dist only)
+$(srcdir)/ChangeLog: .changetag
+	@echo -e "\nGenerating ChangeLog from SVN/BZR, please be patient...\n"
+	cd ${srcdir}; bzr log --gnu-changelog 2>&1 > ChangeLog || svn log 2>&1 > ChangeLog || echo "No official releasse: no changelog" > ChangeLog
+	test -r $@ || touch $@
+
+# extra target to make before a real distribution is built
+# triggers regeneration of ChangeLog and version
+distprep:
+# rebuild fingerprint and update source change tag that way
+	if test -d ${srcdir}/.svn || test -d ${srcdir}/.bzr; then rm -f fingerprint; $(MAKE) fingerprint; fi
+
+#############
+# Debugging #
+#############
+
+.gdbinit:
+	echo "break st_Breakpoint()" > $@
+
+@progname@: all
+	test -r $@ || ln -sf src/armagetronad_main $@
+	ln -sf ./src/doc .
+
+DEBUGFILES=.gdbinit @progname@
+debug: $(DEBUGFILES)
+
+run: debug all
+	./@progname@
+
+debugclean:
+	rm -rf @progname@ @prognamebase@ $(DEBUGFILES) leak.log memprofile*.txt
+
+debugdistclean:
+	rm -rf var
+
+clean-local: debugclean
+
+distclean-local: debugdistclean

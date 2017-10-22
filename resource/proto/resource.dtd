@@ -1,0 +1,10 @@
+<!-- version="0.3.1-a" -->
+<!ELEMENT Resource (%ResourceContents;)>
+<!ATTLIST Resource
+	type CDATA "%ResourceType;"
+	name CDATA #REQUIRED
+	author CDATA 'Anonymous'
+	version CDATA #REQUIRED
+	category CDATA 'unsorted'
+	commissioner CDATA #IMPLIED
+>

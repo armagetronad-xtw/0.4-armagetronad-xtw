@@ -1,0 +1,97 @@
+:Author: z-man, some changes by Luke-Jr
+
+.. contents::
+
+In this file you find instructions how to get from a fresh Subversion checkout
+to a running game. It is assumed that you know how to check out modules on
+your system, because you apparently already managed to check out one :)
+
+"Checking out module X in parallel to this" means you should go to the parent
+directory and check out module X from the same repository where you got this
+module from, so that the parent directory looks like this::
+
+
+	parent_directory:
+	    armagetronad:
+	        README-Subversion and other files
+	    X:
+	        files from X
+
+To use the sources from Subversion, you need to have additional tools
+installed: on all operating systems, you'll need Python (www.python.org). On
+Unix, you also need all autotools (autoconf and automake, check with your
+distribution). To build tarball distributions, you also need a 'svn' command
+line tool that can generate ChangeLogs.
+
+The instructions also apply if you're using BZR to fetch the sources;
+there, 'modules' are just individual branches named
+0.2.8-<modulename>-work.
+
+Unix vanilla
+=============
+
+You're in luck, you already have everything you'll need. Follow these steps::
+
+	# generate configure, config.h.in and the like
+	> sh ./bootstrap.sh
+	# generate and change to build directory
+	> mkdir ../armagetronad-build && cd ../armagetronad-build
+	# run the configure script (add --disable-glout for the dedicated server)
+	> ../armagetronad/configure
+	# run make
+	> make
+	# run game
+	> make run
+	# or run with arguments
+	> ./src/armagetronad_main <options>
+	# install game if you like
+	> make install
+
+Unix managed
+============
+
+There is also a helper module for the unix build, managing the tasks above and
+managing debug and optimized versions of the client and the server. It is
+designed to operate with the Eclipse IDE, but runs fine without it. The
+module's name is armagetronad_build_eclipse. Check it out parallel to the
+armagetronad module, cd there and read the enclosed README. If you're in a
+hurry, just run "make" there.
+
+KDevelop 3.0
+============
+
+(No longer supported)
+
+1. First, you need to bootstrap. Execute: sh ./bootstrap.sh
+2. Run 'kdevelop' if you haven't done so already.
+3. From the Project menu, choose Open Project. Select 'armagetron.kdevelop' 
+   and press OK
+4. From the Build menu, choose Run Configure
+
+If all goes smoothly, you can now edit Armagetron Advanced and run it.
+
+OS X
+====
+
+You will need to install:
+
+* Xcode and Command Line Tools
+* Automake and autoconf
+* The OS X toolkit <https://code.launchpad.net/~dlh/armagetronad/os-x-toolkit>
+
+Follow the Unix vanilla instructions for how to build the game. You will need to
+use the --with-os-x-toolkit configure option. This option needs the OS X toolkit
+directory to be provided, either as an argument to the configure option or by the
+ARMAGETRONAD_OS_X_TOOLKIT environment variable.
+
+Call "make install" to create a stand-alone .app (for the client), or a stand-alone
+directory (for the dedicated server). The installed game will be created in the
+build directory.
+
+Other useful flags: --with-os-x-arch, --with-os-x-sdk, --with-os-x-version-min
+
+*******************
+* Windows + Mingw *
+*******************
+
+Supported via the Code::Blocks IDE. Specific instructions are in win32/README.txt.

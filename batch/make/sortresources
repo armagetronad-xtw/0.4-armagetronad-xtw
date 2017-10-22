@@ -1,0 +1,51 @@
+#!/bin/sh
+# links resources from one directory to another and sorts them there
+# usage: resources <source> <destination> <path to sortresources.py>
+
+# set -x
+
+source=$1
+destination=$2
+sortresources=$3
+
+# globalize path
+#test -z `echo ${sortresources} | grep "^/"` && sortresources=`pwd`/${sortresources}
+
+# exit if source does not exist
+test -d $source || exit 0
+
+# remake directory for included resources
+rm -rf ${destination}
+mkdir -p ${destination}
+
+# link/softlink/copy them over
+cp -Rlf ${source}/* ${destination}/ > /dev/null 2>&1 || cp -Rsf ${source}/* ${destination}/ > /dev/null 2>&1 || cp -Rf ${source}/* ${destination}/ || { echo Copying or linking resources failed. ; exit 1;}
+
+# remove CVS directories and backup files
+find ${destination}/ -depth -type d -name CVS -exec rm -rf \{\} \;
+find ${destination}/ -depth -type d -name .svn -exec rm -rf \{\} \;
+find ${destination}/ -name "*~" -exec rm -rf \{\} \;
+
+# rename them properly
+python ${sortresources} -v ${destination} || exit 1
+
+# copy dtds
+test -r ${destination}/AATeam || mkdir ${destination}/AATeam
+# get resource.dtd's new version
+RESOURCEVERSION=`grep "<!-- version=" < ${source}/resource.dtd | sed -e "s,.*=\",," -e "s,\".*,,"`
+
+for type in `ls ${source} | grep '.dtd$' | grep -v -- - | sed -e 's,.dtd,,'`; do
+    # copy dtd file to one with correct version
+    VERSION=`grep "<!-- version=" < ${destination}/${type}.dtd | sed -e "s,.*=\",," -e "s,\".*,,"`
+    # If the file includes resource.dtd, make it include the properly
+    # versioned resource-version.dtd
+    sed "s,resource.dtd,resource-$RESOURCEVERSION.dtd,g" < ${destination}/${type}.dtd > ${destination}/AATeam/${type}-$VERSION.dtd
+    echo $VERSION > ${destination}/.${type}version
+done
+
+# silently remove empty directories
+find ${destination} -type d -depth -exec rmdir \{\} \; > /dev/null 2>&1 
+
+# tag completion
+touch ${destination} || exit 1
+chmod 755 ${destination} || exit 1
