@@ -74,8 +74,8 @@ IF EXIST %AA_DIR%\.svn (
 echo.
 echo.
 
-IF EXIST %AA_DIR%\.bzr (
-	bzr revno > %HELP_FILE%
+IF EXIST %AA_DIR%\.git (
+	git rev-list --count HEAD > %HELP_FILE%
 	SET /P REV= < %HELP_FILE%
 )
 
