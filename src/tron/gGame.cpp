@@ -158,6 +158,16 @@ static tSettingItem< int > sg_warmupRupIntervalConf("WARMUP_READYUP_INTERVAL", s
 static REAL sg_warmupRespawnTime = 1;
 static tSettingItem< REAL > sg_warmupRespawnTimeConf("WARMUP_RESPAWN_TIME", sg_warmupRespawnTime);
 
+#ifdef RESPAWN_HACK
+static REAL sg_respawnTime = 0.5; //compatibility
+#else
+static REAL sg_respawnTime = -1;
+#endif
+static tSettingItem< REAL > sg_warmupRespawnTimeConf("RESPAWN_TIME", sg_respawnTime);
+
+static bool sg_respawnTimeDZ = false;
+static tSettingItem< bool > sg_warmupRespawnTimeConf("WINZONE_ALLOW_AUTO_RESPAWN", sg_respawnTimeDZ);
+
 void se_DoWarmup( std::istream & s )
 {
     int matches = 0;
@@ -3521,16 +3531,18 @@ void gGame::Timestep(REAL time,bool cam){
     tMemManBase::Check();
 #endif
 
-#ifdef RESPAWN_HACK
+#ifdef RESPAWN_HACK // I can't think of any good reason this isn't already command controlled in the main branch.
     // Only respawn when the round is in play mode and while the deathzone is not active.
-    if( state == GS_PLAY && time > 0 && winner == 0 && !winDeathZone_ )
+    /*if( state == GS_PLAY && time > 0 && winner == 0 && !winDeathZone_ )
     {
         sg_RespawnAllAfter(0.5, time, grid, Arena);
-    }
+    }*/
 #endif
 
     if( se_warmup.IsWarmupMode() && sg_warmupRespawnTime >= 0 )
         sg_RespawnAllAfter(sg_warmupRespawnTime, time, grid, Arena, true);
+    else if(state == GS_PLAY && sg_RespawnTime >= 0 && time > 0 && winner == 0 && (sg_RespawnTimeDZ || !winDeathZone_))
+        sg_RespawnAllAfter(sg_respawnTime, time, grid, Arena, true);
 
     // chop timestep into small, managable bits
     REAL dt = time - lastTimeTimestep;
