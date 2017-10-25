@@ -163,10 +163,10 @@ static REAL sg_respawnTime = 0.5; //compatibility
 #else
 static REAL sg_respawnTime = -1;
 #endif
-static tSettingItem< REAL > sg_warmupRespawnTimeConf("RESPAWN_TIME", sg_respawnTime);
+static tSettingItem< REAL > sg_respawnTimeConf("RESPAWN_TIME", sg_respawnTime);
 
 static bool sg_respawnTimeDZ = false;
-static tSettingItem< bool > sg_warmupRespawnTimeConf("WINZONE_ALLOW_AUTO_RESPAWN", sg_respawnTimeDZ);
+static tSettingItem< bool > sg_respawnTimeDZConf("WINZONE_ALLOW_AUTO_RESPAWN", sg_respawnTimeDZ);
 
 void se_DoWarmup( std::istream & s )
 {
@@ -3541,7 +3541,7 @@ void gGame::Timestep(REAL time,bool cam){
 
     if( se_warmup.IsWarmupMode() && sg_warmupRespawnTime >= 0 )
         sg_RespawnAllAfter(sg_warmupRespawnTime, time, grid, Arena, true);
-    else if(state == GS_PLAY && sg_RespawnTime >= 0 && time > 0 && winner == 0 && (sg_RespawnTimeDZ || !winDeathZone_))
+    else if(state == GS_PLAY && sg_respawnTime >= 0 && time > 0 && winner == 0 && (sg_respawnTimeDZ || !winDeathZone_))
         sg_RespawnAllAfter(sg_respawnTime, time, grid, Arena, true);
 
     // chop timestep into small, managable bits
