@@ -166,7 +166,7 @@ static REAL sg_respawnTime = -1;
 static tSettingItem< REAL > sg_respawnTimeConf("RESPAWN_TIME", sg_respawnTime);
 
 static bool sg_respawnTimeDZ = false;
-static tSettingItem< bool > sg_respawnTimeDZConf("WINZONE_ALLOW_AUTO_RESPAWN", sg_respawnTimeDZ);
+static tSettingItem< bool > sg_respawnTimeDZConf("WIN_ZONE_ALLOW_AUTO_RESPAWN", sg_respawnTimeDZ);
 
 void se_DoWarmup( std::istream & s )
 {
@@ -3399,6 +3399,23 @@ void gGame::StateUpdate(){
         }
     }
 }
+
+static void sg_KillAllPlayers(std::istream &s)
+{
+    if (se_PlayerNetIDs.Len()>0){
+        int max = se_PlayerNetIDs.Len();
+        for(int i=0;i<max;i++){
+            ePlayerNetID *p=se_PlayerNetIDs(i);
+            if (p->IsActive() && p->Object() && p->Object()->Alive() )
+            {
+                p->Object()->Kill();
+            }
+        }
+    }
+}
+
+static tConfItemFunc sg_KillAllPlayers_conf("KILL_ALL", &sg_KillAllPlayers);
+static tAccessLevelSetter sg_KillAllPlayers_confLevel( sg_KillAllPlayers_conf, tAccessLevel_Moderator );
 
 // Respawns cycles (crude test)
 void sg_RespawnAllAfter( REAL after, REAL time, eGrid *grid, gArena & arena, bool atSpawn )
