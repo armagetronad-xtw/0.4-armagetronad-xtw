@@ -325,6 +325,8 @@ public:
     const gPlayerWall* CurrentWall();
     // const gPlayerWall* LastWall();
 
+    void TeleportTo(eCoord dest, eCoord dir, REAL time);
+
 #ifndef DEDICATED
     virtual void Render(const eCamera *cam);
     virtual void Render2D(tCoord scale) const;

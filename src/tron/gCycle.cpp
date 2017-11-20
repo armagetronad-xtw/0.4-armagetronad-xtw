@@ -4246,6 +4246,9 @@ void gCycleWallsDisplayListManager::RenderAllWithDisplayList( eCamera const * ca
     RenderAll( camera, cycle, wallsWithDisplayList_ );
 }
 
+bool sg_HideCyclesWalls = false;
+static tConfItem<bool> sg_HideCyclesWallsConf("HIDE_CYCLES_WALLS", sg_HideCyclesWalls);
+
 void gCycleWallsDisplayListManager::RenderAll( eCamera const * camera, gCycle * cycle, gNetPlayerWall * list )
 {
     if( !list )
@@ -4257,11 +4260,20 @@ void gCycleWallsDisplayListManager::RenderAll( eCamera const * camera, gCycle * 
     sr_DepthOffset(true);
     if ( rTextureGroups::TextureMode[rTextureGroups::TEX_WALL] != 0 )
         glDisable(GL_TEXTURE_2D);
-    
+
     gNetPlayerWall * run = list;
     while( run )
     {
         gNetPlayerWall * next = run->Next();
+
+        if (sg_HideCyclesWalls && camera->Player()->Object())
+        {
+            if (camera->Player() != run->Cycle()->Player())
+            {
+                run = next;
+                continue;
+            }
+        }
         run->RenderList( true, gNetPlayerWall::gWallRenderMode_Lines );
         run = next;
     }
@@ -4270,11 +4282,19 @@ void gCycleWallsDisplayListManager::RenderAll( eCamera const * camera, gCycle * 
     sr_DepthOffset(false);
     if ( rTextureGroups::TextureMode[rTextureGroups::TEX_WALL] != 0 )
         glEnable(GL_TEXTURE_2D);
-    
+
     run = list;
     while( run )
     {
         gNetPlayerWall * next = run->Next();
+        if (sg_HideCyclesWalls && camera->Player()->Object())
+        {
+            if ((camera->Player()->Object()->Alive()) && (camera->Player() != run->Cycle()->Player()))
+            {
+                run = next;
+                continue;
+            }
+        }
         run->RenderList( true, gNetPlayerWall::gWallRenderMode_Quads );
         run = next;
     }
@@ -4291,6 +4311,9 @@ void gCycleWallsDisplayListManager::RenderAll( eCamera const * camera, gCycle * 
     RenderAll( camera, cycle, wallList_ );
 }
 
+bool sg_HideCycles = false;
+static tConfItem<bool> sg_HideCyclesConf("HIDE_CYCLES", sg_HideCycles);
+
 void gCycle::Render(const eCamera *cam){
     /*
     // for use when there's rendering problems on one specific occasion
@@ -4301,6 +4324,10 @@ void gCycle::Render(const eCamera *cam){
         st_Breakpoint();
     }
     */
+
+    //  check whether to display other players or not
+    if (sg_HideCycles && (cam->Player() != this->Player()))
+        return;
 
     // are we blinking from invulnerability?
     bool blinking = false;
@@ -6253,3 +6280,83 @@ bool gCycle::Vulnerable() const
 {
     return Alive() && lastTime > spawnTime_ + sg_cycleInvulnerableTime;
 }
+
+//Respawning and teleporting
+
+
+void gCycle::TeleportTo(eCoord dest, eCoord dir, REAL time) {
+	// Cycle must be alive !
+	if (!Alive()) return;
+	// Drop current wall if exists, without building a new one ...
+	gNetPlayerWall *nwall = ((CurrentWall())?CurrentWall()->NetWall():0);
+	if (nwall) {
+		DropWall(false);
+		nwall->RequestSync();
+	}
+	// Do a safe move to destination
+	MoveSafely(dest,time,time);
+	SetLastTurnPos(dest); // hacky way to ensure to build the wall properly
+	SetLastTurnTime(time);
+	// if dir is not (0,0), do a turn ...
+	if ((dir.x != 0.0) || (dir.y != 0.0)) {
+		int d = Grid()->DirectionWinding(dir);
+        eCoord nextDirDrive = Grid()->GetDirection(d);
+		SetWindingNumberWrapped( d );
+		lastDirDrive = dirDrive;
+		dirDrive = nextDirDrive;
+	}
+	// If cycle was linked to a wall at start position, build a new wall at new position
+	if (!nwall) {
+		DropWall();
+		if ((CurrentWall()) && (CurrentWall()->NetWall())) CurrentWall()->NetWall()->RequestSync();
+	}
+
+	RequestSync();
+}
+
+static void sg_setCycleSpeed(std::istream &s)
+{
+    tString playerStr, speedStr;
+    s >> playerStr;
+
+    ePlayerNetID *player = ePlayerNetID::FindPlayerByName(playerStr);
+
+    if (player)
+    {
+        gCycle *pCycle = dynamic_cast<gCycle *>(player->Object());
+        if (pCycle && pCycle->Alive())
+        {
+            s >> speedStr;
+            REAL speed = atof(speedStr);
+            if (speed <= 0) speed = 0;
+
+            pCycle->verletSpeed_ = speed;
+            pCycle->RequestSync();
+        }
+    }
+}
+
+static tConfItemFunc sg_setCycleSpeedConf("SET_CYCLE_SPEED", sg_setCycleSpeed);
+
+static void sg_setCycleRubber(std::istream &s)
+{
+    tString playerStr, rubberStr;
+    s >> playerStr;
+
+    ePlayerNetID *player = ePlayerNetID::FindPlayerByName(playerStr);
+
+    if (player)
+    {
+        gCycle *pCycle = dynamic_cast<gCycle *>(player->Object());
+        if (pCycle && pCycle->Alive())
+        {
+            s >> rubberStr;
+            REAL rubber = atof(rubberStr);
+            if (rubber < 0) rubber = 0;
+
+            pCycle->SetRubber(rubber);
+            pCycle->RequestSync();
+        }
+    }
+}
+static tConfItemFunc sg_setCycleRubberConf("SET_CYCLE_RUBBER", sg_setCycleRubber);

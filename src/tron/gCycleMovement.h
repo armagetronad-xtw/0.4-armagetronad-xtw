@@ -142,6 +142,8 @@ public:
 
     void RequestSync(bool ack=true);     //!< request a sync
     void RequestSync(int user,bool ack); //!< only for a single user
+
+	REAL            verletSpeed_;               //!< object speed according to verlet (speed of half a frame ago)
 protected:
     //! data from sync message
     struct SyncData
@@ -226,8 +228,6 @@ protected:
     REAL            totalZoneAcceleration;      //!< current acceleration from the effect of zones and monitor
 
     REAL            lastTimestep_;              //!< the length of the last timestep
-    REAL            verletSpeed_;               //!< object speed according to verlet (speed of half a frame ago)
-
     REAL            distance;                   //!< the distance traveled so far
     // REAL         wallContDistance;           //!< distance at which the walls will start to build up ( negative if the wall is already building )
 
