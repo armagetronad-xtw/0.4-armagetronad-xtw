@@ -2261,6 +2261,7 @@ static tConfItemFunc snm("START_NEW_MATCH",&StartNewMatch_conf);
 static tConfItemFunc scr("SCRAMBLE",&Scramble_conf);
 static tConfItemFunc allready_conf("ALL_READY",&AllReady_conf);
 
+static eLadderLogWriter sg_ShutdownLadderLog("SHUTDOWN", true, "time_string+");
 #ifdef DEDICATED
 static void Quit_conf(std::istream &){
 
@@ -2273,6 +2274,10 @@ static void Quit_conf(std::istream &){
     tRecorder::Playback("END");
     tRecorder::Record("END");
     uMenu::quickexit = uMenu::QuickExit_Total;
+
+    // write to ladderlog.txt the time of server shutdown
+    sg_ShutdownLadderLog << st_GetCurrentTime("%Y-%m-%d %H:%M:%S %Z");
+    sg_ShutdownLadderLog.write();
 }
 
 static tConfItemFunc quit_conf("QUIT",&Quit_conf);
