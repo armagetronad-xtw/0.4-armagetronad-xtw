@@ -8990,7 +8990,7 @@ static ePlayerNetID * ReadPlayer( std::istream & s )
 static bool se_enableAdminKillMessage = true;
 static tSettingItem< bool > se_enableAdminKillMessageConf( "ADMIN_KILL_MESSAGE",se_enableAdminKillMessage );
 
-static eLadderLogWriter se_playerKilledWriter("PLAYER_KILLED",true);
+static eLadderLogWriter se_playerKilledWriter("PLAYER_KILLED",true,"player ip x y xdir ydir");
 static ePlayerNetID * ReadPlayer( std::istream & s )
 
 static void Kill_conf(std::istream &s)
