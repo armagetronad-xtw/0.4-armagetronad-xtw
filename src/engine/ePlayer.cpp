@@ -8992,6 +8992,9 @@ static tSettingItem< bool > se_enableAdminKillMessageConf( "ADMIN_KILL_MESSAGE",
 
 static eLadderLogWriter se_playerKilledWriter("PLAYER_KILLED",true,"player ip x y xdir ydir");
 static ePlayerNetID * ReadPlayer( std::istream & s )
+{
+    return ePlayerNetID::ReadPlayer( s );
+}
 
 static void Kill_conf(std::istream &s)
 {
