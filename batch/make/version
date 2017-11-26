@@ -81,6 +81,10 @@ if test -d "${srcdir}/.svn" || test -d "${srcdir}/../.svn"; then
     # get the inter-repository path by parsing the URL
 
     URL=`svn info ${srcdir} | grep ^URL | sed -e 's,^URL: ,,'`
+    
+    if test -d "${srcdir}/.gitignore"; then
+        branchurl=`echo $URL |sed 's/\.[^.]*$//'`
+    fi
 
     # uncomment the following URLs to test various cases
     # trunk
@@ -113,7 +117,9 @@ if test -d "${srcdir}/.svn" || test -d "${srcdir}/../.svn"; then
         # make revision the alpha tag
         REVISION=`svn info ${srcdir} | grep ^Revision | sed -e 's,^Revision: ,,'`
         # echo REVISION=$REVISION
-        minor_version=_alpha$REVISION
+        revcount=$REVISION
+        minor_version=_alpha_r$REVISION
+        
         DATE=""
     fi
 fi
@@ -143,7 +149,7 @@ then
     versioned=#
     gitbranch=$(git config --get remote.origin.url 2>/dev/null)
     branchurl=$(echo ${gitbranch/git@github.com\:/"https://github.com/"}|sed 's/\.[^.]*$//')
-
+    minor_version=_alpha_r${revcount}
 
 #     # We will check this branch diverged, and/or if tree changed
 #     bzrmissingcout=$( cd ${srcdir} && bzr missing --this 2>/dev/null )
