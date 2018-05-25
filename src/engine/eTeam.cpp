@@ -1064,6 +1064,7 @@ static eLadderLogWriter se_onlinePlayerWriter( "ONLINE_PLAYER", true, "player pi
 static eLadderLogWriter se_onlineAIWriter( "ONLINE_AI", true, "player team total_score:int" );
 static eLadderLogWriter se_onlineTeamWriter( "ONLINE_TEAM", true, "team total_score:int" );
 static eLadderLogWriter se_numHumansWriter( "NUM_HUMANS", false, "number_humans:int" );
+static eLadderLogWriter se_playerColoredNameWriter("PLAYER_COLORED_NAME",false,"player colored_name+");
 
 // Writes the data for the ONLINE_PLAYER ladderlog event.
 // Returns true if the player is a human and is active.
@@ -1095,6 +1096,13 @@ static bool se_WriteOnlinePlayerData( ePlayerNetID *player, eTeam *team )
         se_onlineAIWriter << player->Score();
         se_onlineAIWriter.write();
     }
+	if (player)
+	{
+		tColoredString coloredName;
+		coloredName << player->GetColoredName();
+		se_playerColoredNameWriter << player->GetUserName() << coloredName;
+		se_playerColoredNameWriter.write();
+	}
     return isHuman;    
 }
 
@@ -1249,6 +1257,8 @@ void eTeam::AddPlayer    ( ePlayerNetID* player )
             // announce a generic join
             sn_ConsoleOut( tOutput( "$player_entered_game", playerName ) );
         }
+        se_playerColoredNameWriter << player->GetUserName() << playerName;
+		se_playerColoredNameWriter.write();
     }
 
     if ( listID < 0 )
